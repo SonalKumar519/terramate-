@@ -1,19 +1,13 @@
-name: AWS Infrastructure Deployment
+name: Destroy AWS Infrastructure
 
 on:
-  push:
-    branches:
-      - main  # Trigger the workflow on push to the `main` branch
-  pull_request:
-    branches:
-      - main  # Trigger the workflow on PR to `main` branch
+  workflow_dispatch:  # This allows you to manually trigger the workflow
 
 jobs:
-  terraform:
+  terraform-destroy:
     runs-on: ubuntu-latest
     
     steps:
-    
     # Step 1: Checkout the code
     - name: Checkout code
       uses: actions/checkout@v2
@@ -22,7 +16,7 @@ jobs:
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v2
       with:
-        terraform_version: '1.5.0'  # You can specify a specific version or use a range
+        terraform_version: '1.5.0'  # Specify the version of Terraform you are using
     
     # Step 3: Configure AWS credentials using GitHub Secrets
     - name: Set up AWS credentials
@@ -30,60 +24,12 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}  # e.g., 'eu-north-1'
+        aws-region: ${{ secrets.AWS_REGION }}  # e.g., 'us-east-1'
     
     # Step 4: Initialize Terraform
     - name: Terraform Init
       run: terraform init
     
-    # Step 5: Terraform plan
-    - name: Terraform Plan
-      run: terraform plan
-    
-    # Step 6: Apply Terraform configuration (Apply only if it's a push event)
-    - name: Terraform Apply
-      run: terraform apply -auto-approve
-      if: github.event_name == 'push'  # Apply changes only for push events (not for PRs)
-    
-    # Step 7: Wait for 5 minutes before destroying the infrastructure
-    - name: Wait for 5 minutes
-      run: sleep 300  # Wait for 5 minutes (300 seconds)
-
-    # Step 8: Destroy infrastructure (only after 5 minutes)
+    # Step 5: Terraform Destroy to tear down the infrastructure
     - name: Terraform Destroy
       run: terraform destroy -auto-approve
-      if: github.event_name == 'push'  # Only destroy on push events (not for PRs)
-
-  # Optional: Cleanup the resources if it's a Pull Request
-  terraform-cleanup:
-    runs-on: ubuntu-latest
-    needs: terraform
-    if: github.event_name == 'pull_request'  # Run this job only for pull requests
-    
-    steps:
-      # Step 1: Checkout the code again (because it's a separate job)
-      - name: Checkout code
-        uses: actions/checkout@v2
-      
-      # Step 2: Set up Terraform
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: '1.5.0'
-      
-      # Step 3: Configure AWS credentials using GitHub Secrets (same as before)
-      - name: Set up AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-      
-      # Step 4: Initialize Terraform
-      - name: Terraform Init
-        run: terraform init
-      
-      # Step 5: Destroy infrastructure after 5 minutes of creation (can be triggered during PR)
-      - name: Terraform Destroy
-        run: terraform destroy -auto-approve
-        if: github.event_name == 'pull_request'  # Run destroy during PRs only
