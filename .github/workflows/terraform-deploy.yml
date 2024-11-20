@@ -1,38 +1,51 @@
-name: Terraform AWS Deployment
+name: AWS Infrastructure Deployment
 
 on:
   push:
     branches:
-      - main  # Trigger the workflow on push to the 'main' branch
+      - main  # Trigger the workflow on push to the `main` branch
   pull_request:
     branches:
-      - main  # Trigger the workflow on PR to 'main' branch
+      - main  # Trigger the workflow on PR to `main` branch
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
-
+    
     steps:
+    
+    # Step 1: Checkout the code
     - name: Checkout code
-      uses: actions/checkout@v3
-
+      uses: actions/checkout@v2
+    
+    # Step 2: Set up Terraform
     - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v1
+      uses: hashicorp/setup-terraform@v2
       with:
-        terraform_version: '1.6.0'  # Set the desired Terraform version
-
-    - name: Configure AWS credentials
+        terraform_version: '1.5.0'  # You can specify a specific version or use a range
+    
+    # Step 3: Configure AWS credentials using GitHub Secrets
+    - name: Set up AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws_region: ${{ secrets.AWS_REGION }}
-
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}  # e.g., 'eu-north-1'
+    
+    # Step 4: Initialize Terraform
     - name: Terraform Init
       run: terraform init
-
+    
+    # Step 5: Terraform plan
     - name: Terraform Plan
       run: terraform plan
-
+    
+    # Step 6: Apply Terraform configuration (Apply only if it's a push event)
     - name: Terraform Apply
       run: terraform apply -auto-approve
+      if: github.event_name == 'push'  # Apply changes only for push events (not for PRs)
+    
+    # Optional Step 7: Terraform destroy (for cleaning up resources during testing or PRs)
+    - name: Terraform Destroy
+      run: terraform destroy -auto-approve
+      if: github.event_name == 'pull_request'  # Only destroy on PR (optional)
