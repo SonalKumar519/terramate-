@@ -1,0 +1,59 @@
+name: AWS Infrastructure Deployment
+
+on:
+  push:
+    branches:
+      - main  # Trigger the workflow on push to the 'main' branch
+  pull_request:
+    branches:
+      - main  # Trigger the workflow on PR to 'main' branch
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    
+    steps:
+    
+    # Step 1: Checkout the code
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    # Step 2: Set up Terraform
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: '1.6.0'  # Set the desired Terraform version
+    
+    # Step 3: Configure AWS credentials using GitHub Secrets
+    - name: Set up AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}  # e.g., 'eu-north-1'
+    
+    # Step 4: Initialize Terraform
+    - name: Terraform Init
+      run: terraform init
+    
+    # Step 5: Terraform plan
+    - name: Terraform Plan
+      run: terraform plan
+    
+    # Step 6: Apply Terraform configuration (Apply only if it's a push event)
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
+    
+    # Step 7: Wait for 5 minutes to ensure infrastructure is up
+    - name: Wait for 5 minutes
+      run: sleep 300  # 300 seconds = 5 minutes
+    
+    # Step 8: Verify Infrastructure Creation (optional)
+    - name: Verify Infrastructure Creation
+      run: |
+        echo "Checking the infrastructure..."
+        terraform show  # Or any other check you want, like using AWS CLI to verify resources
+    
+    # Step 9: Terraform Destroy to tear down the infrastructure
+    - name: Terraform Destroy
+      run: terraform destroy -auto-approve
