@@ -45,8 +45,8 @@ jobs:
       run: terraform apply -auto-approve
     
     # Step 7: Wait for 5 minutes to ensure infrastructure is up
-    - name: Wait for 5 minutes
-      run: sleep 300  # 300 seconds = 5 minutes
+    - name: Wait for 20 minutes
+      run: sleep 1200  # 1200 seconds = 20 minutes
     
     # Step 8: Verify Infrastructure Creation (optional)
     - name: Verify Infrastructure Creation
